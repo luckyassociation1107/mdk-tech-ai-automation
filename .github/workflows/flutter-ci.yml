@@ -50,7 +50,17 @@ jobs:
           EOF
 
       - name: Pub get
+        env:
+          PUB_CACHE: ${{ env.PUB_CACHE || '/home/runner/.pub-cache' }}
         run: flutter pub get
+
+      - name: Patch flutter_inappwebview_android deprecated ProGuard call
+        run: |
+          # flutter_inappwebview_android 1.1.3 uses getDefaultProguardFile('proguard-android.txt'),
+          # which AGP rejects. Switch to the optimize variant in the pub cache copy.
+          find "$PUB_CACHE" -path '*flutter_inappwebview_android*/android/build.gradle' \
+            -exec sed -i "s/proguard-android.txt/proguard-android-optimize.txt/g" {} +
+          find "$PUB_CACHE" -path '*flutter_inappwebview_android*/android/build.gradle' -exec grep -n proguard {} +
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
