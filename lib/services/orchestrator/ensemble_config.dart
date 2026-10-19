@@ -5,6 +5,7 @@ class EnsembleConfig {
   const EnsembleConfig({
     this.kiloModels = AppConstants.kiloFreeModels,
     this.synthesisEnabled = true,
+    this.duckAiEnabled = false,
     this.customUrl = '',
     this.customKey = '',
     this.customModel = '',
@@ -12,6 +13,9 @@ class EnsembleConfig {
 
   final List<String> kiloModels;
   final bool synthesisEnabled;
+
+  /// Experimental WebView automation of duck.ai. Off by default.
+  final bool duckAiEnabled;
   final String customUrl;
   final String customKey;
   final String customModel;
@@ -21,6 +25,7 @@ class EnsembleConfig {
   EnsembleConfig copyWith({
     List<String>? kiloModels,
     bool? synthesisEnabled,
+    bool? duckAiEnabled,
     String? customUrl,
     String? customKey,
     String? customModel,
@@ -28,6 +33,7 @@ class EnsembleConfig {
     return EnsembleConfig(
       kiloModels: kiloModels ?? this.kiloModels,
       synthesisEnabled: synthesisEnabled ?? this.synthesisEnabled,
+      duckAiEnabled: duckAiEnabled ?? this.duckAiEnabled,
       customUrl: customUrl ?? this.customUrl,
       customKey: customKey ?? this.customKey,
       customModel: customModel ?? this.customModel,

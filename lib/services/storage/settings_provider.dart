@@ -52,6 +52,7 @@ class SettingsProvider extends ChangeNotifier {
 
   static const String _kKiloModels = 'kilo_models';
   static const String _kSynthesis = 'synthesis_enabled';
+  static const String _kDuckAi = 'duck_ai_enabled';
   static const String _kCustomUrl = 'custom_url';
   static const String _kCustomModel = 'custom_model';
   static const String _kCustomKey = 'custom_key';
@@ -73,6 +74,7 @@ class SettingsProvider extends ChangeNotifier {
       EnsembleConfig(
         kiloModels: kilo,
         synthesisEnabled: prefs.getBool(_kSynthesis) ?? true,
+        duckAiEnabled: prefs.getBool(_kDuckAi) ?? false,
         customUrl: prefs.getString(_kCustomUrl) ?? AppConstants.aiApiUrl,
         customModel: prefs.getString(_kCustomModel) ?? AppConstants.aiModel,
         customKey: key,
@@ -94,6 +96,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setSynthesisEnabled(bool value) async {
     _config = _config.copyWith(synthesisEnabled: value);
     await _prefs.setBool(_kSynthesis, value);
+    notifyListeners();
+  }
+
+  Future<void> setDuckAiEnabled(bool value) async {
+    _config = _config.copyWith(duckAiEnabled: value);
+    await _prefs.setBool(_kDuckAi, value);
     notifyListeners();
   }
 

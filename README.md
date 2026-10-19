@@ -12,6 +12,9 @@ shows the single best-judged answer.
 - 🤖 **Free AI ensemble** — the question goes to 4 free Kilo Gateway models in parallel (no API key). A heuristic judge picks the best answer, and an optional synthesis step merges the answers into one (Settings toggle).
 - 🧠 **Conversation memory** — the last 6 turns are sent with each question.
 - 🔍 **Sources** — tap "Sources" on any answer to see every model's reply, its latency, and which one was picked.
+- 🎙️ **Voice** — mic button for speech input, speaker icon to read answers aloud.
+- ⚡ **Streaming** — the final synthesized answer appears word by word.
+- 🦆 **Duck.ai (experimental, off by default)** — drives duck.ai in a hidden Tor WebView.
 - 💾 **Saved history** — the last 200 messages stay on the device across restarts.
 - ⚙️ **Settings** — choose which free models to use, and add your own OpenAI-compatible endpoint (key kept in secure storage).
 - 🛟 **Local fallback** — if no model answers, a built-in reply is shown instead of an error.
@@ -81,7 +84,7 @@ Current tests cover the orchestrator (local fallback dropped when a real AI answ
 
 ## 🗺️ Roadmap
 
-Still open (see [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md), section 5): streaming answers, Duck.ai answer extraction, Tor circuit rotation, voice mode, real automation backends, release signing.
+Open items and the reasons are in [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md), section 6: Tor circuit rotation, real automation backends (need your accounts), release keystore.
 
 ---
 

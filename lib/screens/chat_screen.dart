@@ -5,6 +5,7 @@ import '../core/constants/app_constants.dart';
 import '../models/chat_message.dart';
 import '../providers/chat_provider.dart';
 import '../services/tor/tor_service.dart';
+import '../services/voice/voice_service.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/provider_answer_sheet.dart';
 import '../widgets/typing_indicator.dart';
@@ -41,12 +42,36 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _send([String? preset]) async {
     final text = (preset ?? _controller.text).trim();
     if (text.isEmpty) return;
+    if (VoiceService.instance.isListening) {
+      await VoiceService.instance.stopListening();
+    }
     _controller.clear();
     final chat = context.read<ChatProvider>();
     final future = chat.sendMessage(text);
     _scrollToBottom();
     await future;
     _scrollToBottom();
+  }
+
+  Future<void> _toggleMic() async {
+    final voice = VoiceService.instance;
+    if (voice.isListening) {
+      await voice.stopListening();
+      return;
+    }
+    final ok = await voice.startListening((String text) {
+      _controller.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    });
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice input is not available. Check mic permission.'),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmClear() async {
@@ -68,7 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
     if (ok == true && mounted) {
-      context.read<ChatProvider>().clearChat();
+      await context.read<ChatProvider>().clearChat();
     }
   }
 
@@ -84,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _torChip(BuildContext context) {
+  Widget _torChip() {
     return AnimatedBuilder(
       animation: TorService.instance,
       builder: (BuildContext context, Widget? _) {
@@ -129,7 +154,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                 ),
                 Text(
-                  'Online • Powered by ${AppConstants.companyName}',
+                  'Powered by ${AppConstants.companyName}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -139,7 +164,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: <Widget>[
-          _torChip(context),
+          _torChip(),
           IconButton(
             tooltip: 'Clear chat',
             onPressed: _confirmClear,
@@ -152,8 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (BuildContext context, ChatProvider chat, Widget? _) {
-                final itemCount =
-                    chat.messages.length + (chat.isTyping ? 1 : 0);
+                final itemCount = chat.messages.length + (chat.isTyping ? 1 : 0);
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -166,6 +190,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     return MessageBubble(
                       message: m,
                       onShowSources: m.hasSources ? () => _showSources(m) : null,
+                      onSpeak: m.isUser
+                          ? null
+                          : () => VoiceService.instance.speak(m.text),
                     );
                   },
                 );
@@ -197,6 +224,18 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
               child: Row(
                 children: <Widget>[
+                  AnimatedBuilder(
+                    animation: VoiceService.instance,
+                    builder: (BuildContext context, Widget? _) {
+                      final listening = VoiceService.instance.isListening;
+                      return IconButton(
+                        tooltip: listening ? 'Stop listening' : 'Speak',
+                        onPressed: _toggleMic,
+                        icon: Icon(listening ? Icons.mic : Icons.mic_none),
+                        color: listening ? scheme.error : null,
+                      );
+                    },
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _controller,

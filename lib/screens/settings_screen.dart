@@ -65,6 +65,16 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (bool v) => settings.setKiloModelEnabled(m, v),
             ),
           SwitchListTile(
+            secondary: const Icon(Icons.science_outlined),
+            title: const Text('Duck.ai (experimental)'),
+            subtitle: const Text(
+              'Drives duck.ai in a hidden Tor WebView. Slow, and may break when '
+              'the site changes. Check duck.ai\'s terms before turning on.',
+            ),
+            value: cfg.duckAiEnabled,
+            onChanged: (bool v) => settings.setDuckAiEnabled(v),
+          ),
+          SwitchListTile(
             secondary: const Icon(Icons.auto_fix_high_outlined),
             title: const Text('Synthesize best answer'),
             subtitle: const Text(

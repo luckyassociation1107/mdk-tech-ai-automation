@@ -51,6 +51,16 @@ class ChatMessage {
 
   bool get hasSources => sources.isNotEmpty;
 
+  ChatMessage copyWith({String? text}) => ChatMessage(
+        id: id,
+        text: text ?? this.text,
+        isUser: isUser,
+        timestamp: timestamp,
+        sources: sources,
+        winnerLabel: winnerLabel,
+        judgeReason: judgeReason,
+      );
+
   /// The source whose label matches [winnerLabel], if any.
   ProviderResult? get winner {
     for (final r in sources) {

@@ -40,9 +40,10 @@ jobs:
           import re, pathlib
           p = pathlib.Path('android/app/src/main/AndroidManifest.xml')
           s = p.read_text()
-          if 'android.permission.INTERNET' not in s:
-              s = s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
-                            '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />', 1)
+          for perm in ['android.permission.INTERNET', 'android.permission.RECORD_AUDIO']:
+              if perm not in s:
+                  s = s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+                                '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="' + perm + '" />', 1)
           s = re.sub(r'\s*android:usesCleartextTraffic="[^"]*"', '', s)
           s = s.replace('<application', '<application android:usesCleartextTraffic="false"', 1)
           p.write_text(s)

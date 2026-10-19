@@ -85,26 +85,32 @@ Written from a full read of the repo. Anything marked **UNVERIFIED** has not bee
 
 ## 5. Status of the roadmap (update)
 
-Implemented in the "motham chesi" pass (verified by CI, not on a phone):
+Status after the "anni add" pass. Verified by CI only, not on a phone:
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Conversation memory (last 6 turns, 1200 chars each) | Done |
 | 2 | Answer sheet: "Sources" on each assistant bubble | Done |
-| 3 | Streaming answers | Not done. Needs SSE parsing and device testing |
-| 4 | Real Duck.ai JS extraction | Not done. `DuckAiProvider` removed from the ensemble; needs device testing |
+| 3 | Streaming answers | Partly done. The synthesized answer streams token by token (SSE parser has unit tests). Per-model answers still arrive whole |
+| 4 | Real Duck.ai JS extraction | Done, **experimental and off by default**. Hidden Tor WebView types the prompt and reads the reply. Selectors are guesses and unverified on a device. Check duck.ai's terms before enabling |
 | 5 | LLM synthesis of the best answer (`kilo-auto/free`, Settings toggle, falls back to heuristic) | Done |
 | 6 | Persistent chat history (`shared_preferences`, last 200 msgs) | Done. Not encrypted; history stays on the device |
 | 7 | Settings: model toggles, synthesis toggle, custom endpoint (key in `flutter_secure_storage`) | Done |
 | 8 | Tor status chip in chat app bar; re-verify on app resume | Done |
-| 9 | Tor circuit rotation | Not done. Needs the Orbot control port, not safe to expose |
-| 10 | Voice mode | Not done |
-| 11 | Real automation backends | Not done. Needs per-service accounts and API approvals |
-| 12 | Release pipeline (signing, ProGuard) | Not done. Needs a keystore owned by the user |
-| 13 | Tests | Unit tests for orchestrator, memory, JSON, storage, config. No widget/golden tests yet |
+| 9 | Tor circuit rotation | Not done. Orbot's control port needs auth cookies that an app cannot safely read. Would need an embedded Tor (Arti) |
+| 10 | Voice mode | Done. Mic button uses `speech_to_text`; speaker icon on answers uses `flutter_tts`. Needs device testing |
+| 11 | Real automation backends | Not done. Needs your accounts and approvals (WhatsApp Business API, Gmail OAuth). See the questions below |
+| 12 | Release pipeline | Partly done. `release.yml` builds a release APK on `v*` tags and attaches it to a GitHub release. It is signed with the debug key until you provide a keystore |
+| 13 | Tests | Unit tests for orchestrator, memory, JSON, storage, config, SSE parsing. No widget/golden tests yet |
 | 14 | Cleanup | Done. Removed `useTor` fields, `ai_service.dart`, `DuckAiProvider` |
 
-## 6. High-end features roadmap (remaining)
+## 6. Notes for the remaining items
+
+- **Circuit rotation (9):** Orbot does not give apps a safe way to request a new circuit. Doing it properly means embedding Tor (Arti), which is larger and slower to start.
+- **Automation backends (11):** need accounts and approvals on your side. WhatsApp Business API needs an approved business number. Gmail needs a Google Cloud OAuth client. Tell me which ones, and I can add the code behind a settings toggle.
+- **Release signing (12):** needs a keystore only you should hold. Add it to the repo secrets (`KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) and I will wire `signingConfigs`.
+
+## 7. High-end features roadmap (original list, for reference)
 
 Ordered by value vs. effort. Items 1–4 are the most important.
 

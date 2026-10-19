@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../../models/chat_turn.dart';
 import '../../models/provider_result.dart';
 import '../providers/ai_provider.dart';
+import '../providers/duckai_web_provider.dart';
 import '../providers/kilo_provider.dart';
 import '../providers/local_mock_provider.dart';
 import '../providers/openai_compat_provider.dart';
@@ -12,6 +13,7 @@ import 'judge_service.dart';
 
 /// Fans a question out to every enabled model in parallel, judges the answers,
 /// and optionally asks one more free model to synthesize the best final answer.
+/// The synthesis is streamed: [onPartial] gets the text as it arrives.
 class MultiAiOrchestrator {
   MultiAiOrchestrator({
     required this.config,
@@ -25,12 +27,14 @@ class MultiAiOrchestrator {
   final JudgeService _judge;
 
   static const Duration _perModelTimeout = Duration(seconds: 30);
+  static const Duration _webModelTimeout = Duration(seconds: 70);
 
   List<AiProvider> buildProviders() {
     final override = _providersOverride;
     if (override != null) return override;
     return <AiProvider>[
       for (final String m in config.kiloModels) KiloProvider(kiloModel: m),
+      if (config.duckAiEnabled) const DuckAiProvider(),
       if (config.hasCustom)
         OpenAICompatProvider(
           url: config.customUrl,
@@ -44,6 +48,7 @@ class MultiAiOrchestrator {
   Future<JudgedResult> ask(
     String prompt, {
     List<ChatTurn> history = const <ChatTurn>[],
+    void Function(String textSoFar)? onPartial,
   }) async {
     final providers = buildProviders();
     if (providers.isEmpty) {
@@ -66,7 +71,6 @@ class MultiAiOrchestrator {
               r.isSuccess && r.providerId != LocalMockProvider.providerId)
           .toList();
 
-      // Nothing real answered: show the judged offline fallback / error.
       if (real.isEmpty) return _judge.judge(results);
 
       final judged = _judge.judge(real);
@@ -81,7 +85,7 @@ class MultiAiOrchestrator {
         );
       }
 
-      final synthesized = await _synthesize(prompt, real);
+      final synthesized = await _synthesize(prompt, real, onPartial);
       if (synthesized == null) {
         return JudgedResult(
           finalAnswer: judged.finalAnswer,
@@ -108,10 +112,9 @@ class MultiAiOrchestrator {
     String prompt,
     List<ChatTurn> history,
   ) async {
+    final limit = p is DuckAiProvider ? _webModelTimeout : _perModelTimeout;
     try {
-      return await p
-          .getAnswer(prompt, history: history)
-          .timeout(_perModelTimeout);
+      return await p.getAnswer(prompt, history: history).timeout(limit);
     } on TimeoutException {
       return ProviderResult.timeout(
         providerId: p.id,
@@ -128,11 +131,16 @@ class MultiAiOrchestrator {
     }
   }
 
-  Future<String?> _synthesize(String question, List<ProviderResult> answers) async {
+  Future<String?> _synthesize(
+    String question,
+    List<ProviderResult> answers,
+    void Function(String textSoFar)? onPartial,
+  ) async {
     final synth = KiloProvider(kiloModel: AppConstants.kiloSynthesisModel);
     try {
-      final res = await synth.getAnswer(
+      final res = await synth.streamAnswer(
         JudgeService.buildSynthesisPrompt(question, answers),
+        onDelta: onPartial,
       );
       return res.isSuccess ? res.answer : null;
     } catch (_) {

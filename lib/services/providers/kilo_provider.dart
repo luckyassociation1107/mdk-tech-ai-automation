@@ -18,6 +18,8 @@ class KiloProvider extends AiProvider {
   final http.Client _client;
   final bool _ownsClient;
 
+  Uri get _uri => Uri.parse('${AppConstants.kiloGatewayUrl}/chat/completions');
+
   @override
   String get id => 'kilo-${kiloModel.replaceAll(RegExp(r'[^a-z0-9]'), '-')}';
 
@@ -37,13 +39,32 @@ class KiloProvider extends AiProvider {
   }) {
     return postChatCompletion(
       client: _client,
-      uri: Uri.parse('${AppConstants.kiloGatewayUrl}/chat/completions'),
+      uri: _uri,
       providerId: id,
       label: label,
       model: kiloModel,
       prompt: prompt,
       history: history,
       apiKey: AppConstants.kiloApiKey,
+    );
+  }
+
+  /// Streams the answer, calling [onDelta] with the text so far.
+  Future<ProviderResult> streamAnswer(
+    String prompt, {
+    List<ChatTurn> history = const <ChatTurn>[],
+    void Function(String textSoFar)? onDelta,
+  }) {
+    return streamChatCompletion(
+      client: _client,
+      uri: _uri,
+      providerId: id,
+      label: label,
+      model: kiloModel,
+      prompt: prompt,
+      history: history,
+      apiKey: AppConstants.kiloApiKey,
+      onDelta: onDelta,
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:mdk_tech_ai_automation/services/orchestrator/multi_ai_orchestrat
 import 'package:mdk_tech_ai_automation/services/providers/ai_provider.dart';
 import 'package:mdk_tech_ai_automation/services/providers/local_mock_provider.dart';
 import 'package:mdk_tech_ai_automation/services/storage/chat_storage.dart';
+import 'package:mdk_tech_ai_automation/services/providers/openai_wire.dart';
 import 'package:mdk_tech_ai_automation/services/storage/settings_provider.dart';
 
 class _FakeProvider extends AiProvider {
@@ -159,6 +160,22 @@ void main() {
       ).hasCustom,
       isTrue,
     );
+  });
+
+  test('SSE stream lines: text delta, ignored lines, done marker', () {
+    expect(
+      parseStreamLine('data: {"choices":[{"delta":{"content":"Hi"}}]}'),
+      'Hi',
+    );
+    expect(parseStreamLine(': keep-alive'), isNull);
+    expect(parseStreamLine('data: {not json'), isNull);
+    expect(
+      parseStreamLine('data: {"choices":[{"delta":{}}]}'),
+      isNull,
+    );
+    // The done marker is not text and must not be returned as a delta.
+    expect(parseStreamLine('data: [DONE]'), isNot('Hi'));
+    expect(parseStreamLine('data: [DONE]'), isNotNull);
   });
 
   test('chat storage keeps messages across instances', () async {
