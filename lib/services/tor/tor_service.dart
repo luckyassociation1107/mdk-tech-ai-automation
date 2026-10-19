@@ -80,10 +80,14 @@ class TorService extends ChangeNotifier {
     return true;
   }
 
-  Future<TorStatus> check() async {
-    _status = TorStatus.checking;
+  /// Full verification. With [silent] and a currently-ready status, the UI is
+  /// not switched to "checking" (used when the app resumes from background).
+  Future<TorStatus> check({bool silent = false}) async {
+    if (!(silent && _status == TorStatus.ready)) {
+      _status = TorStatus.checking;
+      notifyListeners();
+    }
     _verifiedAt = null;
-    notifyListeners();
 
     _status = await _fullCheck() ? TorStatus.ready : TorStatus.notAvailable;
     notifyListeners();

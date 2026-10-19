@@ -13,18 +13,28 @@ class TorGateScreen extends StatefulWidget {
   State<TorGateScreen> createState() => _TorGateScreenState();
 }
 
-class _TorGateScreenState extends State<TorGateScreen> {
+class _TorGateScreenState extends State<TorGateScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     TorService.instance.addListener(_onTorChanged);
     TorService.instance.check();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     TorService.instance.removeListener(_onTorChanged);
     super.dispose();
+  }
+
+  /// Re-verify Tor every time the app comes back to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      TorService.instance.check(silent: true);
+    }
   }
 
   void _onTorChanged() {

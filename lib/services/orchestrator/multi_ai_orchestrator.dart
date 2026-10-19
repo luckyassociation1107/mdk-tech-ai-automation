@@ -1,93 +1,144 @@
+import 'dart:async';
+
 import '../../core/constants/app_constants.dart';
+import '../../models/chat_turn.dart';
 import '../../models/provider_result.dart';
 import '../providers/ai_provider.dart';
-import '../providers/duckai_provider.dart';
 import '../providers/kilo_provider.dart';
 import '../providers/local_mock_provider.dart';
 import '../providers/openai_compat_provider.dart';
+import 'ensemble_config.dart';
 import 'judge_service.dart';
 
-/// Fans out to multiple AIs in parallel, collects with timeout, judges best.
+/// Fans a question out to every enabled model in parallel, judges the answers,
+/// and optionally asks one more free model to synthesize the best final answer.
 class MultiAiOrchestrator {
   MultiAiOrchestrator({
+    required this.config,
     List<AiProvider>? providers,
     JudgeService? judge,
-    this.useTor = true,
-    this.enableKilo = true,
-    this.enableDuckAi = true,
-    this.enableCustom = true,
-  })  : _judge = judge ?? JudgeService(),
-        _customProviders = providers;
+  })  : _providersOverride = providers,
+        _judge = judge ?? JudgeService();
 
+  final EnsembleConfig config;
+  final List<AiProvider>? _providersOverride;
   final JudgeService _judge;
-  final List<AiProvider>? _customProviders;
-  final bool useTor;
-  final bool enableKilo;
-  final bool enableDuckAi;
-  final bool enableCustom;
 
-  List<AiProvider> _buildProviders() {
-    if (_customProviders != null) return _customProviders;
-    final list = <AiProvider>[];
-    if (enableKilo) {
-      for (final m in AppConstants.kiloFreeModels) {
-        list.add(KiloProvider(kiloModel: m, useTor: useTor));
-      }
-    }
-    if (enableDuckAi) {
-      list.add(DuckAiProvider());
-    }
-    if (enableCustom && AppConstants.aiApiKey.isNotEmpty) {
-      list.add(OpenAICompatProvider(useTor: useTor));
-    }
-    // Always keep local mock as last fallback
-    list.add(const LocalMockProvider());
-    return list.where((p) => p.isAvailable).toList();
+  static const Duration _perModelTimeout = Duration(seconds: 30);
+
+  List<AiProvider> buildProviders() {
+    final override = _providersOverride;
+    if (override != null) return override;
+    return <AiProvider>[
+      for (final String m in config.kiloModels) KiloProvider(kiloModel: m),
+      if (config.hasCustom)
+        OpenAICompatProvider(
+          url: config.customUrl,
+          apiKey: config.customKey,
+          customModel: config.customModel,
+        ),
+      const LocalMockProvider(),
+    ];
   }
 
-  Future<JudgedResult> ask(String prompt) async {
-    final providers = _buildProviders();
+  Future<JudgedResult> ask(
+    String prompt, {
+    List<ChatTurn> history = const <ChatTurn>[],
+  }) async {
+    final providers = buildProviders();
     if (providers.isEmpty) {
       return const JudgedResult(
-        finalAnswer: 'No AI providers available.',
+        finalAnswer:
+            'No AI models are enabled. Turn on at least one in Settings.',
         winner: null,
-        allAnswers: const [],
-        reason: 'No providers',
+        allAnswers: <ProviderResult>[],
+        reason: 'No providers enabled',
       );
     }
 
-    final futures = providers.map((p) async {
-      try {
-        return await p.getAnswer(prompt).timeout(const Duration(seconds: 30));
-      } catch (_) {
-        return ProviderResult.timeout(providerId: p.id, providerLabel: p.label, model: p.model);
-      }
-    }).toList();
+    try {
+      final results = await Future.wait(
+        providers.map((AiProvider p) => _safeAnswer(p, prompt, history)),
+      );
 
-    final results = await Future.wait(futures);
-    // Local mock is only a fallback: drop it when a real AI answered.
-    final real = results.where((r) => r.isSuccess && r.providerId != 'local-mock').toList();
-    final judged = real.isNotEmpty
-        ? real
-        : results.where((r) => r.isSuccess).toList();
-    if (judged.isEmpty) return _judge.judge(results);
-    return _judge.judge(judged.isEmpty ? results : judged);
+      final real = results
+          .where((ProviderResult r) =>
+              r.isSuccess && r.providerId != LocalMockProvider.providerId)
+          .toList();
+
+      // Nothing real answered: show the judged offline fallback / error.
+      if (real.isEmpty) return _judge.judge(results);
+
+      final judged = _judge.judge(real);
+      final base = judged.winner?.providerLabel ?? '-';
+
+      if (!config.synthesisEnabled || real.length < 2) {
+        return JudgedResult(
+          finalAnswer: judged.finalAnswer,
+          winner: judged.winner,
+          allAnswers: results,
+          reason: judged.reason,
+        );
+      }
+
+      final synthesized = await _synthesize(prompt, real);
+      if (synthesized == null) {
+        return JudgedResult(
+          finalAnswer: judged.finalAnswer,
+          winner: judged.winner,
+          allAnswers: results,
+          reason: '${judged.reason} (synthesis unavailable)',
+        );
+      }
+      return JudgedResult(
+        finalAnswer: synthesized,
+        winner: judged.winner,
+        allAnswers: results,
+        reason: 'Synthesized from ${real.length} answers • base: $base',
+      );
+    } finally {
+      for (final AiProvider p in providers) {
+        p.dispose();
+      }
+    }
   }
 
-  /// For UI progress: stream results as they arrive (optional use).
-  Stream<ProviderResult> askStream(String prompt) async* {
-    final providers = _buildProviders();
-    final completers = providers.map((p) async {
-      try {
-        return await p.getAnswer(prompt).timeout(const Duration(seconds: 30));
-      } catch (_) {
-        return ProviderResult.timeout(providerId: p.id, providerLabel: p.label, model: p.model);
-      }
-    }).toList();
+  Future<ProviderResult> _safeAnswer(
+    AiProvider p,
+    String prompt,
+    List<ChatTurn> history,
+  ) async {
+    try {
+      return await p
+          .getAnswer(prompt, history: history)
+          .timeout(_perModelTimeout);
+    } on TimeoutException {
+      return ProviderResult.timeout(
+        providerId: p.id,
+        providerLabel: p.label,
+        model: p.model,
+      );
+    } catch (_) {
+      return ProviderResult.error(
+        providerId: p.id,
+        providerLabel: p.label,
+        model: p.model,
+        error: 'Failed',
+      );
+    }
+  }
 
-    // Yield as each completes (unordered)
-    for (final f in completers) {
-      yield await f;
+  Future<String?> _synthesize(String question, List<ProviderResult> answers) async {
+    final synth = KiloProvider(kiloModel: AppConstants.kiloSynthesisModel);
+    try {
+      final res = await synth.getAnswer(
+        JudgeService.buildSynthesisPrompt(question, answers),
+      );
+      return res.isSuccess ? res.answer : null;
+    } catch (_) {
+      return null;
+    } finally {
+      synth.dispose();
     }
   }
 }

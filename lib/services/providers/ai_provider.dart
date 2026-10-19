@@ -1,13 +1,23 @@
+import '../../models/chat_turn.dart';
 import '../../models/provider_result.dart';
 
-/// Interface every AI source must implement.
-/// Used by MultiAiOrchestrator to fan-out in parallel.
+/// Interface every AI source implements. The orchestrator fans out to all
+/// enabled providers in parallel.
 abstract class AiProvider {
-  String get id; // e.g. 'kilo-glm'
-  String get label; // e.g. 'Kilo GLM-4.5'
-  String get model; // e.g. 'z-ai/glm-4.5:free'
-  bool get isAvailable; // e.g. false if no API key / no WebView
+  const AiProvider();
 
-  /// Get answer for [prompt]. Must timeout internally and return ProviderResult.error/timeout on failure.
-  Future<ProviderResult> getAnswer(String prompt);
+  String get id;
+  String get label;
+  String get model;
+  bool get isAvailable;
+
+  /// Answer [prompt]. [history] is the earlier conversation (not including
+  /// [prompt]). Must never throw: return a ProviderResult.error/timeout instead.
+  Future<ProviderResult> getAnswer(
+    String prompt, {
+    List<ChatTurn> history = const <ChatTurn>[],
+  });
+
+  /// Release any HTTP client the provider owns.
+  void dispose() {}
 }

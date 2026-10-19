@@ -22,15 +22,15 @@ Written from a full read of the repo. Anything marked **UNVERIFIED** has not bee
 
 ## 2. What the app cannot do (yet)
 
-- **No conversation memory.** Each question is sent alone. Follow-ups like "explain that more" do not work.
-- **No chat history persistence.** Restarting the app clears everything. `ChatMessage` already has `toJson/fromJson`, but nothing saves it.
-- **Duck.ai answers are not extracted.** `DuckAiProvider` always returns `skipped`. The WebView JS that reads Duck.ai's reply is not written.
+- ~~**No conversation memory.**~~ *(now done: last 6 turns are sent)*
+- ~~**No chat history persistence.**~~ *(now done: last 200 messages saved locally)*
+- **Duck.ai answers are not extracted.** The provider was removed from the ensemble. The WebView JS that reads Duck.ai's reply is not written.
 - **ChatGPT / Gemini / Qwen / Arena are not in the ensemble.** They need login and/or reCAPTCHA, and automating them breaks their terms. They are manual browser tabs only.
 - **Automation tools do nothing.** No WhatsApp, Gmail, scheduler, or reminder backend exists.
-- **No streaming.** The user waits for the slowest of 4 models (up to 30 s) before seeing anything.
+- **No streaming.** The user waits for the slowest model (up to 30 s) before seeing anything.
 - **No voice input/output.**
-- **No per-model view in the chat.** `ProviderAnswerSheet` widget exists but is not wired to any screen. The user cannot see which models answered.
-- **No settings to enable/disable providers or pick Kilo models.** Model list is a compile-time constant.
+- ~~**No per-model view in the chat.**~~ *(now done: "Sources" on each bubble)*
+- ~~**No settings to enable/disable providers.**~~ *(now done in Settings)*
 - **No iOS Tor support.** Android WebView proxy override needs Android 10+, and the Tor gate on iOS only checks the socket. The Browser tab blocks itself on iOS.
 - **No Tor identity rotation** (new circuit on demand).
 
@@ -78,12 +78,33 @@ Written from a full read of the repo. Anything marked **UNVERIFIED** has not bee
 | Settings "AI connection" said "local demo mode" | **Fixed** to show the real state. |
 | Tor check only tested that the port was open | **Fixed** — now verifies `IsTor=true` through the proxy. |
 | Automation toggles said "switched ON" with no effect | **Fixed** — message now says demo, backend not connected. |
-| `KiloProvider.useTor` / `OpenAICompatProvider.useTor` fields | Unused. Routing is always Tor. Kept for now; remove in cleanup. |
-| `DuckAiProvider` always in the list, always `skipped` | Harmless, but wasteful. Leave until WebView extraction exists. |
-| `ProviderAnswerSheet` not used | Wire it up (see roadmap). |
+| `useTor` fields | Removed. |
+| `DuckAiProvider` always in the list, always `skipped` | Removed from the ensemble. |
+| `ProviderAnswerSheet` not used | Wired to "Sources" on each assistant bubble. |
 | Widget test used to expect the splash screen | **Replaced** with unit tests (the Tor gate now comes first). |
 
-## 5. High-end features roadmap
+## 5. Status of the roadmap (update)
+
+Implemented in the "motham chesi" pass (verified by CI, not on a phone):
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Conversation memory (last 6 turns, 1200 chars each) | Done |
+| 2 | Answer sheet: "Sources" on each assistant bubble | Done |
+| 3 | Streaming answers | Not done. Needs SSE parsing and device testing |
+| 4 | Real Duck.ai JS extraction | Not done. `DuckAiProvider` removed from the ensemble; needs device testing |
+| 5 | LLM synthesis of the best answer (`kilo-auto/free`, Settings toggle, falls back to heuristic) | Done |
+| 6 | Persistent chat history (`shared_preferences`, last 200 msgs) | Done. Not encrypted; history stays on the device |
+| 7 | Settings: model toggles, synthesis toggle, custom endpoint (key in `flutter_secure_storage`) | Done |
+| 8 | Tor status chip in chat app bar; re-verify on app resume | Done |
+| 9 | Tor circuit rotation | Not done. Needs the Orbot control port, not safe to expose |
+| 10 | Voice mode | Not done |
+| 11 | Real automation backends | Not done. Needs per-service accounts and API approvals |
+| 12 | Release pipeline (signing, ProGuard) | Not done. Needs a keystore owned by the user |
+| 13 | Tests | Unit tests for orchestrator, memory, JSON, storage, config. No widget/golden tests yet |
+| 14 | Cleanup | Done. Removed `useTor` fields, `ai_service.dart`, `DuckAiProvider` |
+
+## 6. High-end features roadmap (remaining)
 
 Ordered by value vs. effort. Items 1–4 are the most important.
 

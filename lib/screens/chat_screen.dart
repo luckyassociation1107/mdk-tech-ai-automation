@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_constants.dart';
+import '../models/chat_message.dart';
 import '../providers/chat_provider.dart';
+import '../services/tor/tor_service.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/provider_answer_sheet.dart';
 import '../widgets/typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -69,6 +72,38 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _showSources(ChatMessage m) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext _) => ProviderAnswerSheet(
+        winner: m.winner,
+        allAnswers: m.sources,
+        reason: m.judgeReason ?? '',
+      ),
+    );
+  }
+
+  Widget _torChip(BuildContext context) {
+    return AnimatedBuilder(
+      animation: TorService.instance,
+      builder: (BuildContext context, Widget? _) {
+        final ok = TorService.instance.isReady;
+        return Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Chip(
+            visualDensity: VisualDensity.compact,
+            avatar: Icon(ok ? Icons.lock : Icons.lock_open, size: 16),
+            label: Text(ok ? 'Tor' : 'No Tor', style: const TextStyle(fontSize: 12)),
+            backgroundColor: ok
+                ? Colors.green.withValues(alpha: 0.18)
+                : Colors.orange.withValues(alpha: 0.2),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -104,6 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: <Widget>[
+          _torChip(context),
           IconButton(
             tooltip: 'Clear chat',
             onPressed: _confirmClear,
@@ -126,7 +162,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     if (chat.isTyping && i == itemCount - 1) {
                       return const TypingIndicator();
                     }
-                    return MessageBubble(message: chat.messages[i]);
+                    final ChatMessage m = chat.messages[i];
+                    return MessageBubble(
+                      message: m,
+                      onShowSources: m.hasSources ? () => _showSources(m) : null,
+                    );
                   },
                 );
               },

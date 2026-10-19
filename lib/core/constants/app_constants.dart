@@ -41,6 +41,9 @@ class AppConstants {
     'qwen/qwen3-coder:free',
   ];
 
+  /// Free model used for the optional "synthesize best answer" step.
+  static const String kiloSynthesisModel = 'kilo-auto/free';
+
   // --- WebView providers (no-login) ---
   static const String duckAiUrl = 'https://duck.ai';
   static const String chatQwenUrl = 'https://chat.qwen.ai';
