@@ -2,15 +2,19 @@ import 'package:flutter/foundation.dart';
 
 import '../core/constants/app_constants.dart';
 import '../models/chat_message.dart';
-import '../services/ai_service.dart';
+import '../services/orchestrator/judge_service.dart';
+import '../services/orchestrator/multi_ai_orchestrator.dart';
+import '../services/tor/tor_service.dart';
 
-/// State for the chat: message list + "Jarvis is typing" flag.
+/// State for the chat: message list + "typing" flag.
+/// Every question is fanned out to the ensemble (through Tor) and judged.
 class ChatProvider extends ChangeNotifier {
-  ChatProvider({AiService? aiService}) : _aiService = aiService ?? AiService() {
+  ChatProvider({MultiAiOrchestrator? orchestrator})
+      : _orchestrator = orchestrator ?? MultiAiOrchestrator(useTor: true) {
     _messages.add(ChatMessage.assistant(AppConstants.welcomeMessage));
   }
 
-  final AiService _aiService;
+  final MultiAiOrchestrator _orchestrator;
   final List<ChatMessage> _messages = <ChatMessage>[];
   bool _isTyping = false;
 
@@ -27,14 +31,19 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final reply = await _aiService.getReply(trimmed);
-      _messages.add(ChatMessage.assistant(reply));
+      // Fail-closed: refuse to send anything if Tor is down.
+      await TorService.instance.requireReady();
+      final JudgedResult result = await _orchestrator.ask(trimmed);
+      _messages.add(ChatMessage.assistant(result.finalAnswer));
+    } on TorBlockedException {
+      _messages.add(ChatMessage.assistant(
+        'Tor is not running, so I can\'t send your message. '
+        'Start Orbot (proxy mode) and try again.',
+      ));
     } catch (_) {
-      _messages.add(
-        ChatMessage.assistant(
-          'Sorry, something went wrong. Please try again.',
-        ),
-      );
+      _messages.add(ChatMessage.assistant(
+        'Sorry, something went wrong. Please try again.',
+      ));
     } finally {
       _isTyping = false;
       notifyListeners();
@@ -51,7 +60,6 @@ class ChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _aiService.dispose();
     super.dispose();
   }
 }

@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/tor_gate_screen.dart';
 
 class MdkJarvisApp extends StatelessWidget {
   const MdkJarvisApp({super.key});
@@ -18,7 +19,7 @@ class MdkJarvisApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: theme.themeMode,
-      home: const SplashScreen(),
+      home: const TorGateScreen(child: SplashScreen()),
     );
   }
 }
