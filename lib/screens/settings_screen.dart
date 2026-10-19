@@ -45,8 +45,8 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('AI connection'),
             subtitle: Text(
               AppConstants.aiApiKey.isEmpty
-                  ? 'Local demo mode — no API key configured'
-                  : 'Connected to ${AppConstants.aiModel}',
+                  ? 'Free ensemble via Kilo Gateway over Tor (no key needed)'
+                  : 'Free ensemble + ${AppConstants.aiModel} (custom key)',
             ),
           ),
           const Divider(),

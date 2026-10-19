@@ -41,7 +41,7 @@ class LocalMockProvider implements AiProvider {
       return 'Hello! I\'m Jarvis (local mode). I can help with automations, Flutter, study plans, coding. What shall we do first?';
     }
     if (hasAny(<String>['who are you', 'your name', 'jarvis'])) {
-      return 'I am Jarvis — MDK Tech\'s AI assistant. Running in local demo mode. Enable Kilo/Duck.ai providers in Settings for multi-AI answers.';
+      return 'I am Jarvis — MDK Tech\'s AI assistant. Running in local fallback mode because no free AI model answered this time.';
     }
     if (hasAny(<String>['whatsapp'])) {
       return 'For WhatsApp automation:\n1) Connect WhatsApp Business API\n2) Save FAQ answers\n3) Auto-reply + human handover\nToggle it in Automation tab.';
@@ -64,6 +64,6 @@ class LocalMockProvider implements AiProvider {
     if (hasAny(<String>['help'])) {
       return 'Try:\n• "What automation can you do?"\n• "Help me learn Flutter"\n• "Compare AIs: explain quantum computing"';
     }
-    return 'You said: "$input".\n\nLocal mock — enable Kilo Gateway free models in Settings for full AI answers (no login needed).';
+    return 'You said: "$input".\n\nLocal fallback reply — the free AI models did not answer this time. Check Orbot and your connection, then try again.';
   }
 }

@@ -1,93 +1,82 @@
 # MDK Jarvis AI — Flutter AI Chat & Automation App
 
-An AI Chat / Jarvis-style assistant app built with **Flutter** by **MDK Tech**.
-It works out of the box in **local demo mode** (built-in mock Jarvis, no API
-key needed) and can be connected to a real AI model with a single command.
+An AI chat / Jarvis-style assistant by **MDK Tech**. Every request goes through
+**Tor** (fail-closed), is sent to several free AI models in parallel, and the app
+shows the single best-judged answer.
 
-## ✨ Features
+> Full, honest breakdown: [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md)
 
-- 🤖 **AI Chat** — chat bubbles, "Jarvis is typing…" indicator, suggestion chips, clear-chat
-- ⚙️ **Automation Tools** — WhatsApp Auto-Reply, Email Automation, Social Media Scheduler, Task Reminders, Lead Follow-Up, AI Study Planner (toggle on/off)
-- 🌙 **Dark / Light theme** — Material 3, switchable in Settings (dark by default)
-- 🧱 **Clean structure** — `core / models / services / providers / screens / widgets` using Provider
-- 🔌 **Real AI ready** — plug in any OpenAI-compatible API via `--dart-define` (no keys in code)
+## ✨ What it does today
+
+- 🧅 **Mandatory Tor (fail-closed)** — the app shows only a "Tor Required" gate until Orbot's SOCKS port (`127.0.0.1:9050`) is up **and** `check.torproject.org` confirms the traffic exits via Tor. No direct fallback.
+- 🤖 **Free AI ensemble** — the question goes to 4 free Kilo Gateway models in parallel (no API key). A heuristic judge picks the best answer.
+- 🛟 **Local fallback** — if no model answers, a built-in reply is shown instead of an error.
+- 🌐 **Browser tab** — Tor-proxied WebView with presets (Duck.ai, ChatGPT, Gemini, Qwen, Arena, Kilo docs). You log in yourself; the app does not automate logins.
+- 🔑 **Optional custom AI** — `--dart-define` an OpenAI-compatible key to add it to the ensemble.
+- ⚙️ **Automation tab** — UI toggles only (demo). Not connected to WhatsApp / Gmail / scheduler yet.
+- 🌙 **Material 3** — dark by default, switchable in Settings.
 
 ## 📁 Project structure
 
 ```
 lib/
-├── main.dart                  # App entry point + Provider setup
-├── app.dart                   # MaterialApp, theme wiring
-├── core/
-│   ├── constants/app_constants.dart
-│   └── theme/app_theme.dart
-├── models/
-│   ├── chat_message.dart
-│   └── automation_tool.dart
+├── main.dart / app.dart
+├── core/constants/app_constants.dart   # URLs, Kilo models, Tor ports, browser presets
+├── core/theme/app_theme.dart
+├── models/        chat_message, automation_tool, provider_result
+├── providers/     chat_provider, theme_provider          (Provider + ChangeNotifier)
 ├── services/
-│   └── ai_service.dart        # Real API call + local mock fallback
-├── providers/
-│   ├── chat_provider.dart
-│   └── theme_provider.dart
-├── screens/
-│   ├── splash_screen.dart
-│   ├── home_screen.dart       # Bottom navigation
-│   ├── chat_screen.dart
-│   ├── automation_screen.dart
-│   └── settings_screen.dart
-└── widgets/
-    ├── message_bubble.dart
-    └── typing_indicator.dart
+│   ├── tor/            tor_service (gate + exit verify), tor_http_client (SOCKS5 HttpClient)
+│   ├── providers/      ai_provider (interface), kilo_provider, duckai_provider (placeholder),
+│   │                   openai_compat_provider, local_mock_provider
+│   └── orchestrator/   multi_ai_orchestrator (parallel fan-out), judge_service (heuristic)
+├── screens/       splash, tor_gate, home, chat, browser, automation, settings
+└── widgets/       message_bubble, typing_indicator, provider_answer_sheet
+docs/              capabilities & limitations, Tor design, no-login provider research
+.github/workflows/ CI: analyze, test, debug APK build
 ```
 
-## 🚀 How to run
+## 🚀 Run it
 
-> This repo contains the complete Dart source (`lib/`, `pubspec.yaml`, tests).
-> If the platform folders (`android/`, `ios/`) are not present yet, generate
-> them once with `flutter create .` — it will **not** overwrite `lib/`.
+Prerequisites: Flutter 3.22+ (CI uses stable), **Orbot** installed on Android and running in proxy mode.
 
 ```bash
 git clone https://github.com/luckyassociation1107/mdk-tech-ai-automation.git
 cd mdk-tech-ai-automation
-
-# 1) Generate android/ios/web folders (safe, keeps lib/ as-is) — run once if missing
-flutter create .
-
-# 2) Install dependencies
+flutter create --platforms=android .   # only if android/ is missing; keeps lib/
 flutter pub get
-
-# 3) Run (local demo mode — no key needed)
 flutter run
 ```
 
-### 🔑 Connect a real AI (optional)
+### Optional: add your own OpenAI-compatible model
 
-Never commit an API key. Pass it at run/build time instead:
+Never commit keys. Pass them at build/run time:
 
 ```bash
 flutter run \
-  --dart-define=AI_API_KEY=your_key_here \
+  --dart-define=AI_API_KEY=your_key \
   --dart-define=AI_API_URL=https://api.openai.com/v1/chat/completions \
   --dart-define=AI_MODEL=gpt-4o-mini
 ```
 
-Any OpenAI-compatible endpoint works. If the API call fails, the app
-automatically falls back to the local mock replies.
+Other build-time overrides: `KILO_API_KEY`, `KILO_GATEWAY_URL`.
+
+## ✅ CI
+
+`.github/workflows/flutter-ci.yml` runs `flutter analyze`, `flutter test`, and builds a debug APK (uploaded as an artifact). It also patches one deprecated ProGuard call in `flutter_inappwebview_android` 1.1.3 — remove that step once the plugin is fixed upstream.
 
 ## 🧪 Tests
 
 ```bash
-flutter test
 flutter analyze
+flutter test
 ```
 
-## 🗺️ Roadmap ideas
+Current tests cover the orchestrator (local mock dropped when a real AI answers), the judge, and the chat provider's initial state. Tor and WebView behaviour need a device test.
 
-- Save chat history locally (Hive / SharedPreferences)
-- Voice input & text-to-speech (Jarvis voice mode)
-- Firebase login
-- Connect each Automation tool to its real backend API
-- Gemini / other model providers in `AiService`
+## 🗺️ Roadmap
+
+See the "High-end features roadmap" section of [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md).
 
 ---
 

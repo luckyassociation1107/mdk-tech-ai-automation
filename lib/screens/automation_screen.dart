@@ -22,7 +22,9 @@ class _AutomationScreenState extends State<AutomationScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          value ? '${tool.title} switched ON' : '${tool.title} switched OFF',
+          value
+              ? '${tool.title} ON (demo — backend not connected yet)'
+              : '${tool.title} OFF',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -49,8 +51,8 @@ class _AutomationScreenState extends State<AutomationScreen> {
           const SizedBox(height: 6),
           Text(
             '$enabledCount of ${_tools.length} automations are ON. '
-            'Switch on a tool to get started — connect each one to your '
-            'backend service when you are ready to go live.',
+            'Toggles are demo only for now. Each tool needs its own backend '
+            'connection (WhatsApp Business API, Gmail, scheduler) before it does anything.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

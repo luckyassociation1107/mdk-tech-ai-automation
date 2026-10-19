@@ -8,7 +8,7 @@
 1. **Orbot install cheyyi:** [Play Store](https://play.google.com/store/apps/details?id=org.torproject.android) or F-Droid
 2. Orbot open → **Start** → SOCKS `127.0.0.1:9050` active avvali (Power User Mode → Proxy mode, VPN mode vaddu)
 3. MDK Jarvis app open → auto Tor check → Green "Tor Ready" kanipiste done
-4. Tor lekapothe app **block** avuthundi — "Start Orbot" button vasthundi, direct ga chat open avadu (privacy kosam)
+4. Tor lekapothe app **block** avuthundi — "Start Orbot" button vasthundi. Direct ga chat open avvadu, messages kuda pampavu (fail-closed)
 
 ### iOS / Desktop
 - V1 lo Tor mandatory = **Android only**. iOS lo WebView proxy OS support cheyyadu, so warning chupistham. V2 lo embedded option add chestham.
@@ -20,7 +20,7 @@
 | HTTP (AI APIs) | `socks5_proxy` → `SocksTCPClient.assignToHttpClient(client, [127.0.0.1:9050])` → all via Tor |
 | WebView (Duck.ai/DeepSeek etc) | `flutter_inappwebview` → `ProxyController.setProxyOverride(socks://127.0.0.1:9050)` → only package that supports per-app proxy on Android 10+ |
 | Check | `socket.connect(127.0.0.1:9050)` + probe `check.torproject.org/api/ip` via Tor |
-| Fail-closed | Proxy down ayithe `clearProxyOverride()` cheyyam — app gate screen lone stay, direct ki velladu |
+| Fail-closed | Proxy down / Tor exit verify fail ayithe gate screen lone stay avuthundi. Direct ki fallback ledu, `clearProxyOverride()` cheyyadu |
 
 Full design doc: [`docs/tor_privacy_mandatory.md`](docs/tor_privacy_mandatory.md) + no-login sites report: [`docs/no_login_websites_report.md`](docs/no_login_websites_report.md)
 
