@@ -42,8 +42,11 @@ class JudgeService {
       int s = 0;
       final a = r.answer;
       // Length sanity: 30-1200 chars ideal
-      if (a.length >= 30 && a.length <= 1400) s += 20;
-      else if (a.length < 20) s -= 15;
+      if (a.length >= 30 && a.length <= 1400) {
+        s += 20;
+      } else if (a.length < 20) {
+        s -= 15;
+      }
       // Structure: lists, code blocks, headers
       if (a.contains('\n-') || a.contains('\n1.') || a.contains('```')) s += 10;
       if (a.contains('##') || a.contains('**')) s += 5;
@@ -83,7 +86,7 @@ class JudgeService {
   }
 
   Set<String> _consensusWords(List<ProviderResult> successes) {
-    final stop = <String>{'the', 'and', 'for', 'you', 'are', 'with', 'that', 'this', 'have', 'from', 'will', 'can', 'not', 'but', 'are', 'was', 'has', 'its', 'our', 'your'};
+    final stop = <String>{'the', 'and', 'for', 'you', 'are', 'with', 'that', 'this', 'have', 'from', 'will', 'can', 'not', 'but', 'was', 'has', 'its', 'our', 'your'};
     final freq = <String, int>{};
     for (final r in successes) {
       final words = r.answer.toLowerCase().split(RegExp(r'\W+')).where((w) => w.length > 3 && !stop.contains(w)).toSet();

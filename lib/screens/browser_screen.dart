@@ -87,7 +87,7 @@ class _BrowserScreenState extends State<BrowserScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(42),
           child: Container(
-            color: _torReady ? Colors.green.withOpacity(0.12) : Colors.orange.withOpacity(0.15),
+            color: _torReady ? Colors.green.withValues(alpha: 0.12) : Colors.orange.withValues(alpha: 0.15),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: [

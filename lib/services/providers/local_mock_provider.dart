@@ -4,6 +4,8 @@ import '../../models/provider_result.dart';
 import 'ai_provider.dart';
 
 class LocalMockProvider implements AiProvider {
+  const LocalMockProvider();
+
   @override
   String get id => 'local-mock';
   @override

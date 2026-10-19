@@ -41,14 +41,14 @@ class MultiAiOrchestrator {
       list.add(OpenAICompatProvider(useTor: useTor));
     }
     // Always keep local mock as last fallback
-    list.add(LocalMockProvider());
+    list.add(const LocalMockProvider());
     return list.where((p) => p.isAvailable).toList();
   }
 
   Future<JudgedResult> ask(String prompt) async {
     final providers = _buildProviders();
     if (providers.isEmpty) {
-      return JudgedResult(
+      return const JudgedResult(
         finalAnswer: 'No AI providers available.',
         winner: null,
         allAnswers: const [],
@@ -65,7 +65,13 @@ class MultiAiOrchestrator {
     }).toList();
 
     final results = await Future.wait(futures);
-    return _judge.judge(results);
+    // Local mock is only a fallback: drop it when a real AI answered.
+    final real = results.where((r) => r.isSuccess && r.providerId != 'local-mock').toList();
+    final judged = real.isNotEmpty
+        ? real
+        : results.where((r) => r.isSuccess).toList();
+    if (judged.isEmpty) return _judge.judge(results);
+    return _judge.judge(judged.isEmpty ? results : judged);
   }
 
   /// For UI progress: stream results as they arrive (optional use).
