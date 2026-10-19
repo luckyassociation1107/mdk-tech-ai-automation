@@ -28,6 +28,11 @@ class TorService extends ChangeNotifier {
 
   TorStatus get status => _status;
   String get lastError => _lastError;
+
+  String? _exitIp;
+
+  /// Exit node IP reported by check.torproject.org on the last successful check.
+  String? get exitIp => _exitIp;
   bool get isReady => _status == TorStatus.ready;
 
   Future<bool> _probeSocks() async {
@@ -53,7 +58,9 @@ class TorService extends ChangeNotifier {
           .timeout(const Duration(seconds: 20));
       if (resp.statusCode != 200) return false;
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return data['IsTor'] == true;
+      final isTor = data['IsTor'] == true;
+      if (isTor) _exitIp = data['IP'] as String?;
+      return isTor;
     } catch (_) {
       return false;
     } finally {

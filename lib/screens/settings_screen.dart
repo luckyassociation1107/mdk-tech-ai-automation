@@ -6,6 +6,7 @@ import '../providers/chat_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/orchestrator/ensemble_config.dart';
 import '../services/storage/settings_provider.dart';
+import '../services/tor/tor_circuit_manager.dart';
 import '../services/tor/tor_service.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -52,6 +53,34 @@ class SettingsScreen extends StatelessWidget {
                   tooltip: 'Re-check',
                   icon: const Icon(Icons.refresh),
                   onPressed: () => TorService.instance.check(),
+                ),
+              );
+            },
+          ),
+          const _Header('Tor circuit'),
+          AnimatedBuilder(
+            animation: Listenable.merge(<Listenable>[
+              TorCircuitManager.instance,
+              TorService.instance,
+            ]),
+            builder: (BuildContext context, Widget? _) {
+              final circuits = TorCircuitManager.instance;
+              return ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('New Tor circuit'),
+                subtitle: Text(
+                  'Exit IP: ${TorService.instance.exitIp ?? 'unknown'} • '
+                  'new circuits this session: ${circuits.rotations}. '
+                  'Each AI model already uses its own circuit.',
+                ),
+                trailing: FilledButton.tonal(
+                  onPressed: () async {
+                    circuits.newIdentity();
+                    // Re-verify through the new circuits to show the new exit IP.
+                    // If Tor fails, the gate screen blocks the app (fail-closed).
+                    await TorService.instance.check(silent: true);
+                  },
+                  child: const Text('New'),
                 ),
               );
             },

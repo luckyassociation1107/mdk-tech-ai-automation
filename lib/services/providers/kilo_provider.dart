@@ -11,7 +11,7 @@ import 'openai_wire.dart';
 /// All traffic goes through the Tor SOCKS client.
 class KiloProvider extends AiProvider {
   KiloProvider({required this.kiloModel, http.Client? client})
-      : _client = client ?? TorHttpClient.create(),
+      : _client = client ?? TorHttpClient.create(isolationKey: kiloModel),
         _ownsClient = client == null;
 
   final String kiloModel;

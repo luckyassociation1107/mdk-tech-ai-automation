@@ -97,16 +97,15 @@ Status after the "anni add" pass. Verified by CI only, not on a phone:
 | 6 | Persistent chat history (`shared_preferences`, last 200 msgs) | Done. Not encrypted; history stays on the device |
 | 7 | Settings: model toggles, synthesis toggle, custom endpoint (key in `flutter_secure_storage`) | Done |
 | 8 | Tor status chip in chat app bar; re-verify on app resume | Done |
-| 9 | Tor circuit rotation | Not done. Orbot's control port needs auth cookies that an app cannot safely read. Would need an embedded Tor (Arti) |
+| 9 | Tor circuit rotation | Done, without the control port. Each AI model uses its own SOCKS username/password, so Tor (IsolateSOCKSAuth) gives it its own circuit. Settings → "New Tor circuit" starts a new identity and shows the new exit IP. Limits: WebViews (Duck.ai, browser) stay on one circuit; open connections keep their old circuit; this relies on Tor's default IsolateSOCKSAuth, which Orbot is expected to keep (verify by checking the exit IP changes) |
 | 10 | Voice mode | Done. Mic button uses `speech_to_text`; speaker icon on answers uses `flutter_tts`. Needs device testing |
 | 11 | Real automation backends | Not done. Needs your accounts and approvals (WhatsApp Business API, Gmail OAuth). See the questions below |
 | 12 | Release pipeline | Partly done. `release.yml` builds a release APK on `v*` tags and attaches it to a GitHub release. It is signed with the debug key until you provide a keystore |
-| 13 | Tests | Unit tests for orchestrator, memory, JSON, storage, config, SSE parsing. No widget/golden tests yet |
+| 13 | Tests | Unit tests for orchestrator, memory, JSON, storage, config, SSE parsing, circuit credentials. No widget/golden tests yet |
 | 14 | Cleanup | Done. Removed `useTor` fields, `ai_service.dart`, `DuckAiProvider` |
 
 ## 6. Notes for the remaining items
 
-- **Circuit rotation (9):** Orbot does not give apps a safe way to request a new circuit. Doing it properly means embedding Tor (Arti), which is larger and slower to start.
 - **Automation backends (11):** need accounts and approvals on your side. WhatsApp Business API needs an approved business number. Gmail needs a Google Cloud OAuth client. Tell me which ones, and I can add the code behind a settings toggle.
 - **Release signing (12):** needs a keystore only you should hold. Add it to the repo secrets (`KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) and I will wire `signingConfigs`.
 

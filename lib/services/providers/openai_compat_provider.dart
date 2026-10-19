@@ -14,7 +14,7 @@ class OpenAICompatProvider extends AiProvider {
     required this.apiKey,
     required this.customModel,
     http.Client? client,
-  })  : _client = client ?? TorHttpClient.create(),
+  })  : _client = client ?? TorHttpClient.create(isolationKey: 'custom-ai'),
         _ownsClient = client == null;
 
   final String url;

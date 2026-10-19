@@ -5,6 +5,7 @@ import 'package:http/io_client.dart';
 import 'package:socks5_proxy/socks_client.dart';
 
 import '../../core/constants/app_constants.dart';
+import 'tor_circuit_manager.dart';
 
 /// Thrown when a request is attempted while Tor is not reachable.
 /// Fail-closed: there is NO direct-connection fallback.
@@ -20,7 +21,14 @@ class TorUnavailableException implements Exception {
 class TorHttpClient {
   TorHttpClient._();
 
-  static http.Client create({Duration timeout = const Duration(seconds: 30)}) {
+  /// [isolationKey] picks the circuit: clients with different keys (e.g. one
+  /// per AI model) use different Tor circuits. Clients created after a
+  /// [TorCircuitManager.newIdentity] call use the new circuits.
+  static http.Client create({
+    Duration timeout = const Duration(seconds: 30),
+    String isolationKey = 'default',
+  }) {
+    final creds = TorCircuitManager.instance.credentialsFor(isolationKey);
     final io = HttpClient()
       ..connectionTimeout = timeout
       ..idleTimeout = const Duration(seconds: 10);
@@ -28,6 +36,8 @@ class TorHttpClient {
       ProxySettings(
         InternetAddress(AppConstants.torSocksHost),
         AppConstants.torSocksPort,
+        username: creds.username,
+        password: creds.password,
       ),
     ]);
     return IOClient(io);

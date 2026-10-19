@@ -8,6 +8,7 @@ shows the single best-judged answer.
 
 ## ✨ What it does today
 
+- 🔄 **Tor circuit control** — each AI model gets its own circuit; "New Tor circuit" in Settings rotates identity and shows the new exit IP.
 - 🧅 **Mandatory Tor (fail-closed)** — the app shows only a "Tor Required" gate until Orbot's SOCKS port (`127.0.0.1:9050`) is up **and** `check.torproject.org` confirms the traffic exits via Tor. No direct fallback.
 - 🤖 **Free AI ensemble** — the question goes to 4 free Kilo Gateway models in parallel (no API key). A heuristic judge picks the best answer, and an optional synthesis step merges the answers into one (Settings toggle).
 - 🧠 **Conversation memory** — the last 6 turns are sent with each question.
@@ -84,7 +85,7 @@ Current tests cover the orchestrator (local fallback dropped when a real AI answ
 
 ## 🗺️ Roadmap
 
-Open items and the reasons are in [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md), section 6: Tor circuit rotation, real automation backends (need your accounts), release keystore.
+Open items and the reasons are in [docs/CAPABILITIES_AND_LIMITATIONS.md](docs/CAPABILITIES_AND_LIMITATIONS.md), section 6: real automation backends (need your accounts), release keystore.
 
 ---
 
